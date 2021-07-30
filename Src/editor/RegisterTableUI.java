@@ -1,5 +1,6 @@
 package editor;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.awt.Toolkit;
@@ -10,17 +11,18 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.MouseInputListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
-
 import jssc.SerialPort;
 
 import javax.swing.JToggleButton;
 
 import javax.swing.JComboBox;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
-import java.awt.peer.KeyboardFocusManagerPeer;
+import java.awt.event.MouseListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -28,6 +30,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import java.awt.GridLayout;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import java.awt.event.MouseAdapter;
 
 public class RegisterTableUI extends JFrame
 {
@@ -35,14 +40,22 @@ public class RegisterTableUI extends JFrame
 	private PacketProcessing packetProcess;
 	
 	private JPanel contentPane;
+	private JButton[] btnValue;
+	private static JTextArea textAreaLog;
+	private static JTextField[][] arrTextField;
 	
-	private boolean connectedState;
-	private JTextField textField;
-	private JTextField textField_1;
+	
+	private static int connectedState;
+	private int selectedChip;
+	private static int selectedAddress;
+	private static int selectedValue;
+	private static String[][] strRegisterTable = new String[16][16];
+
+
 	
 	public RegisterTableUI()
 	{
-		connectedState=false;
+		connectedState=0;
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		changeTitle("EASTERN MASTEC Register Table");
@@ -51,26 +64,28 @@ public class RegisterTableUI extends JFrame
 		Toolkit kit=Toolkit.getDefaultToolkit();
 		Dimension frameSize = new Dimension(1000,800);
 		Dimension screenSize = kit.getScreenSize();
-		setBounds(screenSize.width/2 - frameSize.width/2 , screenSize.height/2 - frameSize.height/2, frameSize.width , frameSize.height);
+		setBounds(screenSize.width/2 - frameSize.width/2 , screenSize.height/2 - frameSize.height/2, 1536 , 801);
 		
 		//change Icon
 		Image icon=kit.getImage("image/logo.png");
 		setIconImage(icon);
 		
-		
+		//init object
 		serialConnect = SerialConnect.getInstance();
-		packetProcess= PacketProcessing.getInstance();
+		packetProcess = PacketProcessing.getInstance();
 
+		//init gui
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
 		contentPane.setLayout(null);
 		
 		JPanel panelSetting = new JPanel();
-		panelSetting.setBounds(12, 10, 960, 182);
+		panelSetting.setBounds(12, 10, 821, 182);
 		contentPane.add(panelSetting);
 		panelSetting.setLayout(null);
 		
+		//port
 		JComboBox comboBoxPort = new JComboBox();
 		comboBoxPort.addPopupMenuListener(new PopupMenuListener()
 		{
@@ -114,12 +129,12 @@ public class RegisterTableUI extends JFrame
 			{
 				comboBoxPort.setEnabled(false);
 				
-				if( connectedState ) // open -> close
+				if( connectedState>0 ) // open -> close
 				{
 					try
 					{
 						serialConnect.disConnect();
-						connectedState=false;
+						connectedState=0;
 						
 						changeTitle("EASTERN MASTEC Register Table - Disconnected");
 						lblState.setText("Disconnected.");
@@ -139,11 +154,11 @@ public class RegisterTableUI extends JFrame
 						comboBoxPort.setEnabled(false);
 					}
 				}
-				else // close -> open
+				else if( connectedState==0 ) // close -> open
 				{
 					String port = comboBoxPort.getSelectedItem().toString();
-					//int speed		= SerialPort.BAUDRATE_9600;
-					int speed       = SerialPort.BAUDRATE_38400;
+					//int speed       = SerialPort.BAUDRATE_38400;
+					int speed       = SerialPort.BAUDRATE_115200;
 					int data		= SerialPort.DATABITS_8;
 					int stop		= SerialPort.STOPBITS_1;
 					int parity		= SerialPort.PARITY_NONE;
@@ -151,7 +166,7 @@ public class RegisterTableUI extends JFrame
 					try
 					{
 						serialConnect.connect(port, speed, data, stop, parity);
-						connectedState = true;
+						connectedState = 1;
 						
 						changeTitle("EASTERN MASTEC Register Table - Connected");
 						lblState.setText("Connected.");
@@ -173,63 +188,39 @@ public class RegisterTableUI extends JFrame
 				}
 			}
 		});
-		btnConnect.setBounds(244, 10, 92, 92);
+		btnConnect.setBounds(12, 112, 220, 57);
 		panelSetting.add(btnConnect);
 		
+		//chip
 		JLabel lblChip = new JLabel("Chip");
-		lblChip.setBounds(348, 10, 115, 41);
+		lblChip.setBounds(244, 10, 115, 41);
 		panelSetting.add(lblChip);
 		
 		JComboBox comboBoxChip = new JComboBox();
-		comboBoxChip.setBounds(348, 61, 115, 41);
+		comboBoxChip.setBounds(244, 61, 115, 41);
 		panelSetting.add(comboBoxChip);
 		
+		//value
 		JLabel lblNewLabel = new JLabel("Value (bit)");
-		lblNewLabel.setBounds(598, 10, 350, 41);
+		lblNewLabel.setBounds(475, 10, 350, 41);
 		panelSetting.add(lblNewLabel);
-		
-		JButton btn0 = new JButton("0");
-		btn0.setBounds(598, 61, 41, 41);
-		panelSetting.add(btn0);
-		
-		JButton btn1 = new JButton("1");
-		btn1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		btn1.setBounds(639, 61, 41, 41);
-		panelSetting.add(btn1);
-		
-		JButton btn2 = new JButton("2");
-		btn2.setBounds(682, 61, 41, 41);
-		panelSetting.add(btn2);
-		
-		JButton btn3 = new JButton("3");
-		btn3.setBounds(724, 61, 41, 41);
-		panelSetting.add(btn3);
-		
-		JButton btn4 = new JButton("4");
-		btn4.setBounds(768, 61, 41, 41);
-		panelSetting.add(btn4);
-		
-		JButton btn5 = new JButton("5");
-		btn5.setBounds(811, 61, 41, 41);
-		panelSetting.add(btn5);
-		
-		JButton btn6 = new JButton("6");
-		btn6.setBounds(852, 61, 41, 41);
-		panelSetting.add(btn6);
-		
-		JButton btn7 = new JButton("7");
-		btn7.setBounds(895, 61, 41, 41);
-		panelSetting.add(btn7);
-		
+
+		btnValue = new JButton[8];
+		for(int i=0; i<8; i++)
+		{
+			int size=45;
+			btnValue[i] = new JButton("0");
+			btnValue[i].setBounds(436+size*i, 60, size, size);
+			panelSetting.add(btnValue[i]);
+		}
+
+		// function
 		JButton btnSaveDump = new JButton("Save Dump");
 		btnSaveDump.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 			}
 		});
-		btnSaveDump.setBounds(12, 115, 226, 57);
+		btnSaveDump.setBounds(244, 112, 180, 57);
 		panelSetting.add(btnSaveDump);
 		
 		JButton btnApplyDump = new JButton("Apply Dump");
@@ -237,33 +228,113 @@ public class RegisterTableUI extends JFrame
 			public void actionPerformed(ActionEvent e) {
 			}
 		});
-		btnApplyDump.setBounds(254, 112, 226, 57);
+		btnApplyDump.setBounds(436, 112, 180, 57);
 		panelSetting.add(btnApplyDump);
 		
 		JButton btnReadAll = new JButton("Read All");
-		btnReadAll.setBounds(492, 112, 226, 57);
+		btnReadAll.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent arg0)
+			{
+				try
+				{
+					serialConnect.write('r');
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		});
+		btnReadAll.setBounds(628, 112, 179, 57);
 		panelSetting.add(btnReadAll);
 		
+		//log
+		textAreaLog = new JTextArea();
+		
+		JScrollPane scroll = new JScrollPane(textAreaLog);
+		scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+		scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scroll.setBounds(840, 10, 660, 740);
+		contentPane.add(scroll);
+
+		// table
 		JPanel panelTable = new JPanel();
-		panelTable.setBounds(12, 202, 960, 550);
+		panelTable.setBounds(12, 202, 821, 550);
 		contentPane.add(panelTable);
-		panelTable.setLayout(new GridLayout(16, 16, 0, 0));
+		panelTable.setLayout(new GridLayout(17, 17, 0, 0));
 		
-		textField = new JTextField();
-		panelTable.add(textField);
-		textField.setColumns(10);
+		arrTextField = new JTextField[17][17];
+		for(int i=0; i<17; i++)
+		{
+			for(int j=0; j<17; j++)
+			{
+				arrTextField[i][j] = new JTextField();
+				arrTextField[i][j].setColumns(2);
 
-		
-		textField.addMouseListener(new TextFieldMouseHandler());
-		textField.addKeyListener(new TextFieldKeyHandler());
-		
-
+				//arrTextField[i][j].setDragEnabled(true);
+				
+				arrTextField[i][j].addKeyListener(new TextFieldKeyHandler());
+				arrTextField[i][j].addFocusListener(new TextFieldFocusHandler());
+				//arrTextField[i][j].setText( "00" );
+				
+				arrTextField[i][j].setHorizontalAlignment(JTextField.CENTER);
+				
+				panelTable.add(arrTextField[i][j]);
+				
+				if(i==0 && j!=0) { arrTextField[i][j].setText( (Integer.toHexString(j-1)).toUpperCase()); }
+			}
+			
+			if(i!=0) { arrTextField[i][0].setText( (Integer.toHexString(i-1)).toUpperCase()); }
+		}
 	}
 	
+	
+
 	public void changeTitle(String s)
 	{
 		this.setTitle(s);
 	}
+
+	public static void addTextArea(String s)
+	{
+		textAreaLog.append(s);
+		textAreaLog.setCaretPosition(textAreaLog.getDocument().getLength());
+	}
+	
+	public static void showErrorMsgBox(String msg)
+	{
+		JOptionPane.showMessageDialog(null, msg , "Error", JOptionPane.ERROR_MESSAGE);
+	}
+	
+	public static JTextField[][] getArrTextField()
+	{
+		return arrTextField;
+	}
+
+	public static void updateRegisterTable()
+	{
+		for(int i=0; i<16; i++)
+		{
+			for(int j=0; j<16; j++)
+			{
+				arrTextField[i+1][j+1].setText( strRegisterTable[i][j].toUpperCase() );
+			}
+		}
+
+	}
+	
+	public static void setSelectAddress(int addr)
+	{
+		selectedAddress = addr;
+	}
+	
+	public static String[][] getStrRegisterTable()
+	{
+		return strRegisterTable;
+	}
+
 }
 
 
@@ -275,7 +346,7 @@ class TextFieldMouseHandler implements MouseInputListener
 	public void mouseClicked(MouseEvent e)
 	{
 		// 마우스 버튼이 클릭된 경우 발생되는 이벤트 
-		System.out.println("test");
+
 	}
 
 	@Override
@@ -312,6 +383,42 @@ class TextFieldMouseHandler implements MouseInputListener
 	public void mouseMoved(MouseEvent arg0)
 	{
 		// 마우스 커서가 움직일 때 발생되는 이벤트 
+	}
+}
+
+class BtnValueMouseHandler implements MouseListener
+{
+
+	@Override
+	public void mouseClicked(MouseEvent e)
+	{
+		// TODO Auto-generated method stub
+		JButton jb = (JButton) e.getSource();
+
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
 	}
 }
 
@@ -355,9 +462,40 @@ class TextFieldKeyHandler implements KeyListener
 			System.out.println("typed");
 			//textField.requestFocus();
 		}
-
 	}
-	
+}
+
+class TextFieldFocusHandler implements FocusListener
+{
+	@Override
+	public void focusGained(FocusEvent e)
+	{
+		// TODO Auto-generated method stub
+		JTextField tf = (JTextField) e.getSource();
+		tf.setBackground(Color.YELLOW);
+
+		JTextField[][] arrtf =  RegisterTableUI.getArrTextField();
+		for(int i=0; i<17; i++)
+		{
+			for(int j=0; j<17; j++)
+			{
+				 if( tf==arrtf[i][j] )
+				 {
+					 RegisterTableUI.setSelectAddress( ((i-1)*16+(j-1)) );
+					 System.out.print("i="+i+"\t j="+j);
+					 System.out.println("\t pos="+Integer.toHexString(((i-1)*16+(j-1))));
+				 }
+			}
+		}
+	}
+
+	@Override
+	public void focusLost(FocusEvent e)
+	{
+		// TODO Auto-generated method stub
+		JTextField jf = (JTextField) e.getSource();
+		jf.setBackground(Color.WHITE);
+	}
 }
 
 

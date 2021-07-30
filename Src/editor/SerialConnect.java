@@ -32,8 +32,11 @@ public class SerialConnect
 		serialPort.openPort();
 		serialPort.setParams(speed, dataBit, stopBit, parityBit);
 		
-		SerialPortReader reader=new SerialPortReader(serialPort);
-        serialPort.addEventListener(reader);
+		//SerialPortReader reader=new SerialPortReader(serialPort);
+        //serialPort.addEventListener(reader);
+		
+	    new ReadThread(serialPort).start();
+	    //new WriteThread(serialPort).start();
 	}
 	
 	void disConnect()
@@ -101,6 +104,73 @@ public class SerialConnect
 	}
 }
 
+
+
+class ReadThread extends Thread
+{
+	SerialPort serial;
+	PacketProcessing packetProcess;
+	
+	
+	
+	ReadThread(SerialPort serial)
+	{
+		this.serial = serial;
+		packetProcess=PacketProcessing.getInstance();
+	}
+
+	public void run()
+	{
+		try
+		{
+			while (true)
+			{
+				byte[] buffer = serial.readBytes();
+				if(buffer != null && buffer.length > 0)
+				{
+					//System.out.print(new String(buffer));
+					
+					String msg = new String(buffer);
+					//System.out.println(msg);
+					RegisterTableUI.addTextArea(msg);
+					packetProcess.updateRegisterTable(msg);
+				}
+			}
+		}
+		catch (Exception e)
+		{
+				e.printStackTrace();
+		}
+	}
+}
+
+class WriteThread extends Thread
+{
+	SerialPort serial;
+	WriteThread(SerialPort serial)
+	{
+		this.serial = serial;
+	}
+	
+	public void run()
+	{
+		try
+		{
+			int c = 0;
+	
+			//System.out.println("\nKeyborad Input Read!!!!");
+			while ((c = System.in.read()) > -1)
+			{
+				serial.writeInt(c);
+			}
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+}
+
+/*
 class SerialPortReader implements SerialPortEventListener
 {
 	SerialPort serialPort;
@@ -120,14 +190,19 @@ class SerialPortReader implements SerialPortEventListener
 			{
 				try
 				{
-					byte[] buffer = serialPort.readBytes();
-					for(int i=0; i<buffer.length; i++)
+					while (true)
 					{
-//print
-						System.out.println("Serial rxBuffer[" + i + "]: " + PacketProcessing.byteHexToStringHex(buffer[i]) + " "+ PacketProcessing.byteHexToAsciiCode(buffer[i]));
-						//MainGui.setTextArea("buffer[" + i + "]: " + byteToHex(buffer[i]) + " "+ hexToAscii(byteToHex(buffer[i]))+"\n");
-//
-						//packetProcess.rxProcessing(buffer[i]);
+						byte[] buffer = serialPort.readBytes();
+						if( buffer != null && buffer.length>0 )
+						{
+							//System.out.print(new String(buffer));
+							//RegisterTableUI.addTextArea(new String(buffer));
+							
+							String msg = new String(buffer);
+							
+							RegisterTableUI.addTextArea(msg);
+							packetProcess.updateRegisterTable(msg);
+						}
 					}
 				}
 				catch (SerialPortException e)
@@ -138,4 +213,5 @@ class SerialPortReader implements SerialPortEventListener
 		}
 	}
 }
+*/
 

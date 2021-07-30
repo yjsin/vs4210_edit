@@ -1,6 +1,7 @@
 package editor;
 
 import java.util.ArrayList;
+import java.util.StringTokenizer;
 
 public class PacketProcessing
 {
@@ -8,9 +9,16 @@ public class PacketProcessing
 	ArrayList<Byte> rxBuffer=new ArrayList<Byte>();
 	ArrayList<Byte> txBuffer=new ArrayList<Byte>();
 	
+	private int state;
+	private int counter;
+	private StringBuilder sb = new StringBuilder();
+	
+	private final int WAITTING_COUNT = 50;
+
 	public PacketProcessing()
 	{
-		serialConnect=SerialConnect.getInstance();	
+		serialConnect=SerialConnect.getInstance();
+		state=0;
 	}
 
 	private static class PacketProcessingHolder
@@ -29,6 +37,146 @@ public class PacketProcessing
     }
 
 	
+//
+    void updateRegisterTable(String str )
+    {
+//
+    	//System.out.println(str);
+//
+    	if( (state==4210) || (state==2824) )
+    	{
+    		if( counter>0 )
+    		{
+    			counter--;
+
+    			if( str.contains("end") )
+    			{
+    				sb.append(str);
+    				String dump = sb.toString();
+//
+    				//System.out.println("\n dump \n"+ dump);
+//
+    				// cut
+    				int startIdx, endIdx;
+    				String temp;
+    				String[][] table = RegisterTableUI.getStrRegisterTable();
+    				
+    				for(int i=0; i<16; i++)
+    				{
+    					startIdx = dump.indexOf(Integer.toHexString(i).toUpperCase()+":")+3; // 3 = "0: "
+    					
+    					if( i==15)
+    					{
+    						endIdx = dump.indexOf("end") - 30; //  30 = " \n ========== VS4210 register "
+    					}
+    					else
+    					{
+    						endIdx = dump.indexOf(Integer.toHexString(i+1).toUpperCase()+":")-2; // 2 = " \n"
+    					}
+//
+    					//System.out.println( "start=" + startIdx + "\t" + "end=" + endIdx);
+//
+    					if( startIdx > endIdx)
+    					{
+    						RegisterTableUI.showErrorMsgBox("Read Error!\nStart/End index error");
+    	    				state=0;
+    	    				counter=0;
+    	    				sb.delete(0,sb.length());
+    						return;
+    					}
+    					
+    					temp= dump.substring(startIdx, endIdx);
+    					
+    					int j=0;
+    					StringTokenizer stk = new StringTokenizer(temp, " ");
+    					while(stk.hasMoreElements())
+    					{
+    						if( j>15 )
+    						{
+        						RegisterTableUI.showErrorMsgBox("Read Error!\nParsing error");
+        	    				state=0;
+        	    				counter=0;
+        	    				sb.delete(0,sb.length());
+        						return;
+    					    }
+    						String hexStr = stk.nextToken();
+    						
+    						//hexString이 아닌경우 예외처리 안되어 있음
+    						table[i][j++] = hexStr;
+
+    					}
+    				}
+/*
+    				// test
+    				System.out.println("\n arr test");
+    				for(int i=0; i<16; i++)
+    				{
+    					for(int j=0; j<16; j++)
+    					{
+    						System.out.print(table[i][j]+" ");
+    					}
+    					System.out.println("");
+    				}
+*/
+    				
+    				RegisterTableUI.updateRegisterTable();
+    				
+    				state=0;
+    				counter=0;
+    				sb.delete(0,sb.length());
+    				
+    				
+    			}
+    			else
+    			{
+    				sb.append(str);
+    			}
+    		}
+    		else
+    		{
+    			state = 0;
+    			counter=0;
+    			sb.delete(0,sb.length());
+    		}
+    	}
+    	else if( state == 1 ) // read인지 체크
+    	{
+    		if( counter>0 )
+    		{
+    			counter--;
+    			sb.append(str);
+    			String temp = sb.toString();
+
+        		if( temp.contains("VS4210 register read") )
+        		{
+        			state = 4210;
+        			counter=WAITTING_COUNT; //패킷이 한줄찍오는게 아니라 중간중간 짤려서 여러줄로 그지같이 날라옴
+        		}
+        		else if( str.contains("TP2824 register read") )
+        		{
+        			state = 2824;
+        			counter=WAITTING_COUNT;
+        		}
+    		}
+    		else
+    		{
+    			state = 0;
+    			sb.delete(0,sb.length());
+    		}
+    		
+    	}
+    	else
+    	{
+    		if( str.contains("===") ) // 줄바꿔서 그지 같이 들어옴  ex> "vs4210 re"+"gister"
+    		{
+    			sb.append(str);
+    			state = 1;
+    			counter = 3;
+    		}
+    	}
+    }
+    
+//
 
     public static String byteHexToAsciiCode(byte byteHex)
     {
