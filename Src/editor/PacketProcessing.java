@@ -5,7 +5,7 @@ import java.util.StringTokenizer;
 
 public class PacketProcessing
 {
-	SerialConnect serialConnect;
+	static SerialConnect serialConnect;
 	ArrayList<Byte> rxBuffer=new ArrayList<Byte>();
 	ArrayList<Byte> txBuffer=new ArrayList<Byte>();
 	
@@ -177,6 +177,64 @@ public class PacketProcessing
     }
     
 //
+    
+    
+//
+    public static void writeRegister(int address, int value)
+    {
+    	int sleepTime = 20;
+    	
+    	System.out.println("writeValue("+address+","+value+")");
+    	
+    	serialConnect.write('w');
+    	try {
+			Thread.sleep(sleepTime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	serialConnect.write( Integer.toHexString(address/16)  );
+    	
+    	try {
+			Thread.sleep(sleepTime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	serialConnect.write( Integer.toHexString(address%16)  );
+    	
+    	try {
+			Thread.sleep(sleepTime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	serialConnect.write( Integer.toHexString(value/16)  );
+    	
+    	try {
+			Thread.sleep(sleepTime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    	
+    	serialConnect.write( Integer.toHexString(value%16)  );
+    	try {
+			Thread.sleep(sleepTime);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
+
+
+
+//
+    
+    
 
     public static String byteHexToAsciiCode(byte byteHex)
     {

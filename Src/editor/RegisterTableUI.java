@@ -48,7 +48,7 @@ public class RegisterTableUI extends JFrame
 	private static int connectedState;
 	private int selectedChip;
 	private static int selectedAddress;
-	private static int selectedValue;
+	private static int selectedValue=0;
 	private static String[][] strRegisterTable = new String[16][16];
 
 
@@ -270,24 +270,34 @@ public class RegisterTableUI extends JFrame
 		{
 			for(int j=0; j<17; j++)
 			{
-				arrTextField[i][j] = new JTextField();
+				arrTextField[i][j] = new JTextField("00");
 				arrTextField[i][j].setColumns(2);
 
 				//arrTextField[i][j].setDragEnabled(true);
 				
 				arrTextField[i][j].addKeyListener(new TextFieldKeyHandler());
-				arrTextField[i][j].addFocusListener(new TextFieldFocusHandler());
-				//arrTextField[i][j].setText( "00" );
-				
+				arrTextField[i][j].setFocusTraversalKeysEnabled(false);	// tab key
+				arrTextField[i][j].addFocusListener(new TextFieldFocusHandler());				
 				arrTextField[i][j].setHorizontalAlignment(JTextField.CENTER);
 				
 				panelTable.add(arrTextField[i][j]);
 				
-				if(i==0 && j!=0) { arrTextField[i][j].setText( (Integer.toHexString(j-1)).toUpperCase()); }
+				if(i==0 && j!=0)
+				{
+					arrTextField[i][j].setText( (Integer.toHexString(j-1)).toUpperCase());
+					arrTextField[i][j].setEditable(false);
+					arrTextField[i][j].setFocusable(false);
+				}
 			}
 			
-			if(i!=0) { arrTextField[i][0].setText( (Integer.toHexString(i-1)).toUpperCase()); }
+			if(i!=0)
+			{
+				arrTextField[i][0].setText( (Integer.toHexString(i-1)).toUpperCase());
+				arrTextField[i][0].setEditable(false);
+				arrTextField[i][0].setFocusable(false);
+			}
 		}
+
 	}
 	
 	
@@ -325,11 +335,24 @@ public class RegisterTableUI extends JFrame
 
 	}
 	
-	public static void setSelectAddress(int addr)
+	public static void setSelectedAddress(int addr)
 	{
 		selectedAddress = addr;
 	}
+	public static int getSelectedAddress()
+	{
+		return selectedAddress;
+	}
 	
+	public static void setSelectedValue(int val)
+	{
+		selectedValue = val;
+	}
+	public static int getSelectedValue()
+	{
+		return selectedValue;
+	}
+
 	public static String[][] getStrRegisterTable()
 	{
 		return strRegisterTable;
@@ -443,25 +466,98 @@ class TextFieldKeyHandler implements KeyListener
 	public void keyPressed(KeyEvent e)
 	{
 		// keyTyped - 키가 타이핑 됬을때 발생하는 이벤트. 말그대로 타이핑이 되야하므로 타이핑이 되지 않는 보조키는 작동치 않음.
-
+		//System.out.println("keyPressed : "+e.getKeyCode() );
+		
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e)
 	{
 		// keyReleased - 어떤 키던 상관없이 키가 놓아졌을 때 발생하는 이벤트
+		//System.out.println("keyRelease : "+e.getKeyCode() );
+		
+		int addr = RegisterTableUI.getSelectedAddress();
+		int val = RegisterTableUI.getSelectedValue();
+		JTextField[][] arrtf =  RegisterTableUI.getArrTextField();
+		//System.out.println("addr/16 = " + addr/16 + "\t addr%16 = " + addr%16);
+		
+		if( (e.getKeyCode() == KeyEvent.VK_TAB) )
+		{
+			System.out.println("tab");
+			
+			int calAddr = addr-16-1;
+			int calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
+
+			//PacketProcessing.writeRegister(calAddr, calVal);
+
+			
+			
+			
+		}
+		else if( (e.getKeyCode() == KeyEvent.VK_ENTER) )
+		{
+			System.out.println("enter");
+			
+			int calAddr = addr-16-1;
+			int calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
+			
+			if( calVal < 0x10 )
+			{
+				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+			}
+			else
+			{
+				arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
+			}
+			
+			PacketProcessing.writeRegister(calAddr, calVal);
+
+		}
+		else if( (e.getKeyCode() == KeyEvent.VK_ESCAPE) )
+		{
+			//System.out.println("esc");
+			if( val < 0x10 )
+			{
+				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(val).toUpperCase());
+			}
+			else
+			{
+				arrtf[addr/16][addr%16].setText(Integer.toHexString(val).toUpperCase());
+			}
+		}
+		
+		else if( (e.getKeyChar() >= '0' && e.getKeyChar() <= '9') ||
+				 (e.getKeyChar() >= 'a' && e.getKeyChar() <= 'f') )
+		{
+			if( arrtf[addr/16][addr%16].getText().length()>=3)
+			{
+				//arrtf[addr/16][addr%16].setText(Integer.toHexString(val));
+				arrtf[addr/16][addr%16].setText( Character.toString(e.getKeyChar()).toUpperCase() );
+			}
+		}
+		//else if( e.getKeyChar() >= 'g' && e.getKeyChar() <= 'z' )
+		else if( (e.getKeyCode() >= KeyEvent.VK_G && e.getKeyCode() <= KeyEvent.VK_Z ) ||
+				 (e.getKeyChar() >= ' ' && e.getKeyChar() <= '/' ) ||	// 33 ~ 47
+				 (e.getKeyChar() >= ':' && e.getKeyChar() <= '@' ) ||	// 58 ~ 40
+				 (e.getKeyChar() >= '[' && e.getKeyChar() <= '`' ) )	// 91 ~ 96
+		{
+			if( val < 0x10 )
+			{
+				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(val).toUpperCase());
+			}
+			else
+			{
+				arrtf[addr/16][addr%16].setText(Integer.toHexString(val).toUpperCase());
+			}
+		}
 	}
 
 	@Override
 	public void keyTyped(KeyEvent e)
 	{
 		// keyPressed - 어떤 키던 상관없이 키가 눌러졌을 때 발생하는 이벤트
-		
-		if(e.getKeyCode() == KeyEvent.VK_TAB)
-		{
-			System.out.println("typed");
-			//textField.requestFocus();
-		}
+		//System.out.println("keyTyped : "+Character.toString( e.getKeyChar() ) );
+
 	}
 }
 
@@ -471,19 +567,34 @@ class TextFieldFocusHandler implements FocusListener
 	public void focusGained(FocusEvent e)
 	{
 		// TODO Auto-generated method stub
-		JTextField tf = (JTextField) e.getSource();
-		tf.setBackground(Color.YELLOW);
+		JTextField focusTf = (JTextField) e.getSource();
+		focusTf.setBackground(Color.YELLOW);
 
 		JTextField[][] arrtf =  RegisterTableUI.getArrTextField();
 		for(int i=0; i<17; i++)
 		{
 			for(int j=0; j<17; j++)
 			{
-				 if( tf==arrtf[i][j] )
+				 if( focusTf==arrtf[i][j] )
 				 {
-					 RegisterTableUI.setSelectAddress( ((i-1)*16+(j-1)) );
-					 System.out.print("i="+i+"\t j="+j);
-					 System.out.println("\t pos="+Integer.toHexString(((i-1)*16+(j-1))));
+					 //System.out.print("i="+i+"\t j="+j);
+					 //System.out.println("\t pos="+Integer.toHexString(((i-1)*16+(j-1))));
+					 //RegisterTableUI.setSelectedAddress( ((i-1)*16+(j-1)) );
+					 //System.out.println("selectedAddress = "+ Integer.toHexString(RegisterTableUI.getSelectedAddress()));
+					 
+					 
+					 //RegisterTableUI.setSelectedAddress(i*16+j);
+					 //System.out.println("selectedAddress = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()) + "\t"+RegisterTableUI.getSelectedAddress());
+					 
+					 int addr = i*16+j;
+					 RegisterTableUI.setSelectedAddress(addr);
+
+					if( arrtf[addr/16][addr%16].getText().length() == 2 )
+					{
+						int val = Integer.parseInt( arrtf[addr/16][addr%16].getText(), 16);
+						RegisterTableUI.setSelectedValue(val);
+						//System.out.println("before val = " + Integer.toHexString(val) );
+					}
 				 }
 			}
 		}
