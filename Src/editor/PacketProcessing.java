@@ -67,7 +67,7 @@ public class PacketProcessing
     					
     					if( i==15)
     					{
-    						endIdx = dump.indexOf("end") - 30; //  30 = " \n ========== VS4210 register "
+    						endIdx = dump.indexOf("end") - 29; //  30 = " \n ========== VS4210 register "
     					}
     					else
     					{
@@ -86,6 +86,10 @@ public class PacketProcessing
     					}
     					
     					temp= dump.substring(startIdx, endIdx);
+
+//
+    					//System.out.println("temp="+temp);
+//
     					
     					int j=0;
     					StringTokenizer stk = new StringTokenizer(temp, " ");
@@ -184,7 +188,7 @@ public class PacketProcessing
     {
     	int sleepTime = 20;
     	
-    	System.out.println("writeValue("+address+","+value+")");
+    	//System.out.println("writeRegister("+address+","+value+")");
     	
     	serialConnect.write('w');
     	try {

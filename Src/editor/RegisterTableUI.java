@@ -483,20 +483,31 @@ class TextFieldKeyHandler implements KeyListener
 		
 		if( (e.getKeyCode() == KeyEvent.VK_TAB) )
 		{
-			System.out.println("tab");
+			//System.out.println("tab");
 			
 			int calAddr = addr-16-1;
 			int calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
 
-			//PacketProcessing.writeRegister(calAddr, calVal);
+			if( calVal < 0x10 )
+			{
+				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+			}
+			else
+			{
+				arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
+			}
+			
+			PacketProcessing.writeRegister(calAddr, calVal);
 
+			//System.out.println("tab addr = " + Integer.toHexString(addr));
+			//System.out.println("tab val = " + Integer.toHexString(val));
 			
-			
-			
+			arrtf[addr/16][addr%16+1].requestFocus(); // move focus
+
 		}
 		else if( (e.getKeyCode() == KeyEvent.VK_ENTER) )
 		{
-			System.out.println("enter");
+			//System.out.println("enter");
 			
 			int calAddr = addr-16-1;
 			int calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
@@ -588,6 +599,7 @@ class TextFieldFocusHandler implements FocusListener
 					 
 					 int addr = i*16+j;
 					 RegisterTableUI.setSelectedAddress(addr);
+					 //System.out.println("focus addr = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()));
 
 					if( arrtf[addr/16][addr%16].getText().length() == 2 )
 					{
@@ -595,6 +607,7 @@ class TextFieldFocusHandler implements FocusListener
 						RegisterTableUI.setSelectedValue(val);
 						//System.out.println("before val = " + Integer.toHexString(val) );
 					}
+
 				 }
 			}
 		}
