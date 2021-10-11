@@ -7,15 +7,21 @@ import java.awt.Toolkit;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.MouseInputListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.filechooser.FileSystemView;
+
 import jssc.SerialPort;
 
 import javax.swing.JToggleButton;
 
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -23,6 +29,11 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -38,6 +49,7 @@ public class RegisterTableUI extends JFrame
 {
 	private SerialConnect serialConnect;
 	private PacketProcessing packetProcess;
+	
 	
 	private JPanel contentPane;
 	private JButton[] btnValue;
@@ -199,6 +211,9 @@ public class RegisterTableUI extends JFrame
 		JComboBox comboBoxChip = new JComboBox();
 		comboBoxChip.setBounds(244, 61, 115, 41);
 		panelSetting.add(comboBoxChip);
+// disable temporay
+		comboBoxChip.setEnabled(false);
+//
 		
 		//value
 		JLabel lblNewLabel = new JLabel("Value (bit)");
@@ -212,22 +227,37 @@ public class RegisterTableUI extends JFrame
 			btnValue[i] = new JButton("0");
 			btnValue[i].setBounds(436+size*i, 60, size, size);
 			panelSetting.add(btnValue[i]);
+// disable temporay
+			btnValue[i].setEnabled(false);
+//
 		}
 
 		// function
 		JButton btnSaveDump = new JButton("Save Dump");
 		btnSaveDump.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			public void actionPerformed(ActionEvent e)
+			{
+				
 			}
 		});
 		btnSaveDump.setBounds(244, 112, 180, 57);
 		panelSetting.add(btnSaveDump);
+// disable temporary
+		btnSaveDump.setEnabled(false);
+//
 		
 		JButton btnApplyDump = new JButton("Apply Dump");
-		btnApplyDump.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+
+		btnApplyDump.addMouseListener(new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked(MouseEvent arg0)
+			{
+				DumpProgress dpBar = new DumpProgress();
+				new Thread(dpBar).start();
 			}
 		});
+
 		btnApplyDump.setBounds(436, 112, 180, 57);
 		panelSetting.add(btnApplyDump);
 		
@@ -621,5 +651,6 @@ class TextFieldFocusHandler implements FocusListener
 		jf.setBackground(Color.WHITE);
 	}
 }
+
 
 
