@@ -56,6 +56,8 @@ public class RegisterTableUI extends JFrame
 	private static JTextArea textAreaLog;
 	private static JTextField[][] arrTextField;
 	
+	private static JButton btnApplyDump;
+	private static JButton btnReadAll;
 	
 	private static int connectedState;
 	private int selectedChip;
@@ -246,7 +248,8 @@ public class RegisterTableUI extends JFrame
 		btnSaveDump.setEnabled(false);
 //
 		
-		JButton btnApplyDump = new JButton("Apply Dump");
+		//JButton btnApplyDump = new JButton("Apply Dump");
+		btnApplyDump = new JButton("Apply Dump");
 
 		btnApplyDump.addMouseListener(new MouseAdapter()
 		{
@@ -261,7 +264,8 @@ public class RegisterTableUI extends JFrame
 		btnApplyDump.setBounds(436, 112, 180, 57);
 		panelSetting.add(btnApplyDump);
 		
-		JButton btnReadAll = new JButton("Read All");
+		//JButton btnReadAll = new JButton("Read All");
+		btnReadAll = new JButton("Read All");
 		btnReadAll.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -388,6 +392,12 @@ public class RegisterTableUI extends JFrame
 		return strRegisterTable;
 	}
 
+	public static void setEnableBtn(boolean state)
+	{
+		btnApplyDump.setEnabled(state);
+		btnReadAll.setEnabled(state);
+	}
+	
 }
 
 

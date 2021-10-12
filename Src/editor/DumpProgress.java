@@ -89,9 +89,11 @@ class DumpProgress implements ActionListener, Runnable
     @Override
 	public void run()
     {
-
+    	RegisterTableUI.setEnableBtn(false);
+    	
     	while(doingFlag)
     	{
+    		
     		int result = chooser.showOpenDialog(fileWindow);
     		String filePath;
     		
@@ -151,6 +153,8 @@ class DumpProgress implements ActionListener, Runnable
     						// send
     						//System.out.printf("write(%02X,%02X);\n", addrHex, valHex);
     						PacketProcessing.writeRegister(addrHex, valHex);
+    						//Thread.sleep(100);
+    						Thread.sleep(150);
     					}
     					else
     					{
@@ -162,6 +166,7 @@ class DumpProgress implements ActionListener, Runnable
     				//dump end
     				br.close();
     				doingFlag=false;
+    				RegisterTableUI.setEnableBtn(false);
     				
     			} catch (Exception e)
     			{
@@ -181,6 +186,7 @@ class DumpProgress implements ActionListener, Runnable
     	//close
     	fileWindow.dispose();
     	pbBar.dispose();
+    	RegisterTableUI.setEnableBtn(true);
 	}
     
     @Override
