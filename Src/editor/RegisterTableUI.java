@@ -526,17 +526,34 @@ class TextFieldKeyHandler implements KeyListener
 			//System.out.println("tab");
 			
 			int calAddr = addr-16-1;
-			int calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
-
-			if( calVal < 0x10 )
+			int calVal;
+			if( addr%16 == 0 )
 			{
-				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+				calVal = Integer.parseInt( arrtf[addr/16-1][addr%16+16].getText() , 16 );
+				
+				if( calVal < 0x10 )
+				{
+					arrtf[addr/16-1][addr%16+16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+				}
+				else
+				{
+					arrtf[addr/16-1][addr%16+16].setText(Integer.toHexString(calVal).toUpperCase());
+				}
 			}
 			else
 			{
-				arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
+				calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
+				
+				if( calVal < 0x10 )
+				{
+					arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+				}
+				else
+				{
+					arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
+				}
 			}
-			
+
 			PacketProcessing.writeRegister(calAddr, calVal);
 
 			//System.out.println("tab addr = " + Integer.toHexString(addr));
@@ -550,55 +567,115 @@ class TextFieldKeyHandler implements KeyListener
 			//System.out.println("enter");
 			
 			int calAddr = addr-16-1;
-			int calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
-			
-			if( calVal < 0x10 )
+			int calVal;
+			if( addr%16 == 0 )
 			{
-				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+				calVal = Integer.parseInt( arrtf[addr/16-1][addr%16+16].getText() , 16 );
+				
+				if( calVal < 0x10 )
+				{
+					arrtf[addr/16-1][addr%16+16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+				}
+				else
+				{
+					arrtf[addr/16-1][addr%16+16].setText(Integer.toHexString(calVal).toUpperCase());
+				}
 			}
 			else
 			{
-				arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
+				calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
+				
+				if( calVal < 0x10 )
+				{
+					arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(calVal).toUpperCase());
+				}
+				else
+				{
+					arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
+				}
 			}
-			
+
+			//System.out.printf( "calAddr = %d(=%x) \t calVal = %d(=%x)\n", calAddr, calAddr, calVal, calVal);
 			PacketProcessing.writeRegister(calAddr, calVal);
 
 		}
 		else if( (e.getKeyCode() == KeyEvent.VK_ESCAPE) )
 		{
 			//System.out.println("esc");
-			if( val < 0x10 )
+			if( addr%16 == 0 )
 			{
-				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(val).toUpperCase());
+				if( val < 0x10 )
+				{
+					arrtf[addr/16-1][addr%16+16].setText("0"+Integer.toHexString(val).toUpperCase());
+				}
+				else
+				{
+					arrtf[addr/16-1][addr%16+16].setText(Integer.toHexString(val).toUpperCase());
+				}
 			}
 			else
 			{
-				arrtf[addr/16][addr%16].setText(Integer.toHexString(val).toUpperCase());
+				if( val < 0x10 )
+				{
+					arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(val).toUpperCase());
+				}
+				else
+				{
+					arrtf[addr/16][addr%16].setText(Integer.toHexString(val).toUpperCase());
+				}
 			}
 		}
 		
 		else if( (e.getKeyChar() >= '0' && e.getKeyChar() <= '9') ||
 				 (e.getKeyChar() >= 'a' && e.getKeyChar() <= 'f') )
 		{
-			if( arrtf[addr/16][addr%16].getText().length()>=3)
+			if( addr%16 == 0 )
 			{
-				//arrtf[addr/16][addr%16].setText(Integer.toHexString(val));
-				arrtf[addr/16][addr%16].setText( Character.toString(e.getKeyChar()).toUpperCase() );
+				if( arrtf[addr/16-1][addr%16+16].getText().length()>=3 )
+				{
+					//System.out.println("addr=" + addr + " arrtf["+(addr/16-1)+"]["+(addr%16+16)+"].getText()="+arrtf[addr/16-1][addr%16+16].getText());
+					arrtf[addr/16-1][addr%16+16].setText( Character.toString(e.getKeyChar()).toUpperCase() );
+				}
+			}
+			else
+			{
+				if( arrtf[addr/16][addr%16].getText().length()>=3 )
+				{
+					//System.out.println("addr=" + addr + " arrtf["+addr/16+"]["+addr%16+"].getText()="+arrtf[addr/16][addr%16].getText());
+					arrtf[addr/16][addr%16].setText( Character.toString(e.getKeyChar()).toUpperCase() );
+				}
 			}
 		}
-		//else if( e.getKeyChar() >= 'g' && e.getKeyChar() <= 'z' )
 		else if( (e.getKeyCode() >= KeyEvent.VK_G && e.getKeyCode() <= KeyEvent.VK_Z ) ||
 				 (e.getKeyChar() >= ' ' && e.getKeyChar() <= '/' ) ||	// 33 ~ 47
 				 (e.getKeyChar() >= ':' && e.getKeyChar() <= '@' ) ||	// 58 ~ 40
 				 (e.getKeyChar() >= '[' && e.getKeyChar() <= '`' ) )	// 91 ~ 96
 		{
-			if( val < 0x10 )
+			if( addr%16==0 )
 			{
-				arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(val).toUpperCase());
+				if( val < 0x10 )
+				{
+					//System.out.println("1 addr=" + addr + " arrtf[" + (addr/16-1) + "][" + (addr%16+16) + "].getText()=" + arrtf[addr/16-1][addr%16+16].getText());
+					arrtf[addr/16-1][addr%16+16].setText("0"+Integer.toHexString(val).toUpperCase());
+				}
+				else
+				{
+					//System.out.println("2 addr=" + addr + " arrtf[" + (addr/16-1) + "][" + (addr%16+16) + "].getText()=" + arrtf[addr/16-1][addr%16+16].getText());
+					arrtf[addr/16-1][addr%16+16].setText(Integer.toHexString(val).toUpperCase());
+				}
 			}
 			else
 			{
-				arrtf[addr/16][addr%16].setText(Integer.toHexString(val).toUpperCase());
+				if( val < 0x10 )
+				{
+					//System.out.println("3 addr=" + addr + " arrtf[" + addr/16 + "][" + addr%16 + "].getText()=" + arrtf[addr/16][addr%16].getText());
+					arrtf[addr/16][addr%16].setText("0"+Integer.toHexString(val).toUpperCase());
+				}
+				else
+				{
+					//System.out.println("4 addr=" + addr + " arrtf[" + addr/16 + "][" + addr%16 + "].getText()=" + arrtf[addr/16][addr%16].getText());
+					arrtf[addr/16][addr%16].setText(Integer.toHexString(val).toUpperCase());
+				}
 			}
 		}
 	}
@@ -608,7 +685,6 @@ class TextFieldKeyHandler implements KeyListener
 	{
 		// keyPressed - 어떤 키던 상관없이 키가 눌러졌을 때 발생하는 이벤트
 		//System.out.println("keyTyped : "+Character.toString( e.getKeyChar() ) );
-
 	}
 }
 
@@ -626,29 +702,40 @@ class TextFieldFocusHandler implements FocusListener
 		{
 			for(int j=0; j<17; j++)
 			{
-				 if( focusTf==arrtf[i][j] )
-				 {
-					 //System.out.print("i="+i+"\t j="+j);
-					 //System.out.println("\t pos="+Integer.toHexString(((i-1)*16+(j-1))));
-					 //RegisterTableUI.setSelectedAddress( ((i-1)*16+(j-1)) );
-					 //System.out.println("selectedAddress = "+ Integer.toHexString(RegisterTableUI.getSelectedAddress()));
+				if( focusTf==arrtf[i][j] )
+				{
+									
+					//System.out.print("i="+i+"\t j="+j);
+					//System.out.println("\t pos="+Integer.toHexString(((i-1)*16+(j-1))));
+					//RegisterTableUI.setSelectedAddress( ((i-1)*16+(j-1)) );
+					//System.out.println("selectedAddress = "+ Integer.toHexString(RegisterTableUI.getSelectedAddress()));
 					 
 					 
-					 //RegisterTableUI.setSelectedAddress(i*16+j);
-					 //System.out.println("selectedAddress = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()) + "\t"+RegisterTableUI.getSelectedAddress());
+					//RegisterTableUI.setSelectedAddress(i*16+j);
+					//System.out.println("selectedAddress = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()) + "\t"+RegisterTableUI.getSelectedAddress());
 					 
-					 int addr = i*16+j;
-					 RegisterTableUI.setSelectedAddress(addr);
-					 //System.out.println("focus addr = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()));
+					int addr = i*16+j;
+					RegisterTableUI.setSelectedAddress(addr);
+					//System.out.println("focus addr = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()));
 
-					if( arrtf[addr/16][addr%16].getText().length() == 2 )
+					int val;
+					if( addr%16 == 0 )
 					{
-						int val = Integer.parseInt( arrtf[addr/16][addr%16].getText(), 16);
-						RegisterTableUI.setSelectedValue(val);
-						//System.out.println("before val = " + Integer.toHexString(val) );
+						if( arrtf[addr/16-1][addr%16+16].getText().length() == 2 )
+						{
+							val = Integer.parseInt( arrtf[addr/16-1][addr%16+16].getText(), 16);
+							RegisterTableUI.setSelectedValue(val);
+						}
 					}
-
-				 }
+					else
+					{
+						if( arrtf[addr/16][addr%16].getText().length() == 2 )
+						{
+							val = Integer.parseInt( arrtf[addr/16][addr%16].getText(), 16);
+							RegisterTableUI.setSelectedValue(val);
+						}
+					}
+				}
 			}
 		}
 	}
