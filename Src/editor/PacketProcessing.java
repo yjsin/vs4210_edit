@@ -37,11 +37,11 @@ public class PacketProcessing
     }
 
 	
-//
+
     void updateRegisterTable(String str )
     {
 //
-    	//System.out.println(str);
+//    	System.out.println(str);
 //
     	if( (state==4210) || (state==2824) )
     	{
@@ -54,7 +54,7 @@ public class PacketProcessing
     				sb.append(str);
     				String dump = sb.toString();
 //
-    				//System.out.println("\n dump \n"+ dump);
+//    				System.out.println("\n dump \n"+ dump);
 //
     				// cut
     				int startIdx, endIdx;
@@ -68,13 +68,14 @@ public class PacketProcessing
     					if( i==15)
     					{
     						endIdx = dump.indexOf("end") - 29; //  30 = " \n ========== VS4210 register "
+    						
     					}
     					else
     					{
     						endIdx = dump.indexOf(Integer.toHexString(i+1).toUpperCase()+":")-2; // 2 = " \n"
     					}
 //
-    					//System.out.println( "start=" + startIdx + "\t" + "end=" + endIdx);
+//    					System.out.println( "start=" + startIdx + "\t" + "end=" + endIdx);
 //
     					if( startIdx > endIdx)
     					{
@@ -82,13 +83,14 @@ public class PacketProcessing
     	    				state=0;
     	    				counter=0;
     	    				sb.delete(0,sb.length());
+    	    				//sb.setLength(0);
     						return;
     					}
     					
     					temp= dump.substring(startIdx, endIdx);
 
 //
-    					//System.out.println("temp="+temp);
+//    					System.out.println("temp="+temp);
 //
     					
     					int j=0;
@@ -150,24 +152,32 @@ public class PacketProcessing
     			counter--;
     			sb.append(str);
     			String temp = sb.toString();
-
+//
+//    			System.out.println("temp \n" + temp );
+//
         		if( temp.contains("VS4210 register read") )
         		{
         			state = 4210;
         			counter=WAITTING_COUNT; //패킷이 한줄찍오는게 아니라 중간중간 짤려서 여러줄로 그지같이 날라옴
         		}
-        		else if( str.contains("TP2824 register read") )
+        		else if( temp.contains("TP2824 register read") )
         		{
         			state = 2824;
         			counter=WAITTING_COUNT;
+        		}
+        		else if( str.contains("change") || str.contains("write") )
+        		{
+        			state = 0;
+        			counter=0;
+        			sb.delete(0,sb.length());
         		}
     		}
     		else
     		{
     			state = 0;
+    			counter=0;
     			sb.delete(0,sb.length());
     		}
-    		
     	}
     	else
     	{
@@ -180,16 +190,13 @@ public class PacketProcessing
     	}
     }
     
-//
-    
-    
-//
+
     public static void writeRegister(int address, int value)
     {
     	int sleepTime = 20;
-    	
-    	//System.out.println("writeRegister("+address+","+value+")");
-    	
+//    	
+//    	System.out.println("writeRegister("+address+","+value+")");
+//    	
     	serialConnect.write('w');
     	try {
 			Thread.sleep(sleepTime);

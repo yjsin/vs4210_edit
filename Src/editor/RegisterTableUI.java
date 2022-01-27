@@ -50,7 +50,6 @@ public class RegisterTableUI extends JFrame
 	private SerialConnect serialConnect;
 	private PacketProcessing packetProcess;
 	
-	
 	private JPanel contentPane;
 	private JButton[] btnValue;
 	private static JTextArea textAreaLog;
@@ -59,14 +58,18 @@ public class RegisterTableUI extends JFrame
 	private static JButton btnApplyDump;
 	private static JButton btnReadAll;
 	
+	private static JComboBox comboBoxPort;
+	private static JComboBox comboBoxChip;
+	
+	private static JToggleButton btnConnect;
+	private static JButton btnSaveDump;
+	
 	private static int connectedState;
-	private int selectedChip;
+	private static int selectedChip=1; // 1:vs4210, 2:tp2824
 	private static int selectedAddress;
 	private static int selectedValue=0;
 	private static String[][] strRegisterTable = new String[16][16];
 
-
-	
 	public RegisterTableUI()
 	{
 		connectedState=0;
@@ -99,8 +102,9 @@ public class RegisterTableUI extends JFrame
 		contentPane.add(panelSetting);
 		panelSetting.setLayout(null);
 		
+		
 		//port
-		JComboBox comboBoxPort = new JComboBox();
+		comboBoxPort = new JComboBox();
 		comboBoxPort.addPopupMenuListener(new PopupMenuListener()
 		{
 			public void popupMenuCanceled(PopupMenuEvent arg0)
@@ -135,10 +139,11 @@ public class RegisterTableUI extends JFrame
 		JLabel lblState = new JLabel("Select Port");
 		lblState.setBounds(12, 10, 220, 41);
 		panelSetting.add(lblState);
+
 		
-		JToggleButton btnConnect = new JToggleButton("Open");
+		btnConnect = new JToggleButton("Open");
 		btnConnect.addActionListener(new ActionListener()
-		{	
+		{
 			public void actionPerformed(ActionEvent ae)
 			{
 				comboBoxPort.setEnabled(false);
@@ -154,7 +159,8 @@ public class RegisterTableUI extends JFrame
 						lblState.setText("Disconnected.");
 						btnConnect.setText("Open");
 						btnConnect.setSelected(false);
-						comboBoxPort.setEnabled(true);
+						
+						setEnableBtn(false);
 					}
 					catch(Exception e)
 					{
@@ -165,7 +171,8 @@ public class RegisterTableUI extends JFrame
 						lblState.setText("Disconnect failed.");
 						btnConnect.setText("Close");
 						btnConnect.setSelected(true);
-						comboBoxPort.setEnabled(false);
+						
+						setEnableBtn(true);
 					}
 				}
 				else if( connectedState==0 ) // close -> open
@@ -186,7 +193,8 @@ public class RegisterTableUI extends JFrame
 						lblState.setText("Connected.");
 						btnConnect.setText("Close");
 						btnConnect.setSelected(true);
-						comboBoxPort.setEnabled(false);
+						
+						setEnableBtn(true);
 					}
 					catch(Exception e)
 					{
@@ -197,25 +205,59 @@ public class RegisterTableUI extends JFrame
 						lblState.setText("Connect Failed.");
 						btnConnect.setText("Open");
 						btnConnect.setSelected(false);
-						comboBoxPort.setEnabled(true);
+
+						setEnableBtn(false);
 					}
 				}
 			}
 		});
 		btnConnect.setBounds(12, 112, 220, 57);
 		panelSetting.add(btnConnect);
-		
+
 		//chip
 		JLabel lblChip = new JLabel("Chip");
 		lblChip.setBounds(244, 10, 115, 41);
 		panelSetting.add(lblChip);
 		
-		JComboBox comboBoxChip = new JComboBox();
+		comboBoxChip = new JComboBox();
 		comboBoxChip.setBounds(244, 61, 115, 41);
 		panelSetting.add(comboBoxChip);
-// disable temporay
 		comboBoxChip.setEnabled(false);
+
+		comboBoxChip.addItem("VS4210");
+		comboBoxChip.addItem("TP2824");
+		comboBoxChip.setSelectedIndex(0);
+		comboBoxChip.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				// TODO Auto-generated method stub
+				selectedChip = comboBoxChip.getSelectedIndex()+1;
 //
+//				System.out.println("selected Chip = " + selectedChip);
+//
+				if( selectedChip == 1 )	{ btnApplyDump.setEnabled(true);	}
+				else 					{ btnApplyDump.setEnabled(false);	}
+				
+				try
+				{
+					serialConnect.write('c'); // change
+					Thread.sleep(20);
+
+					serialConnect.write(Integer.toHexString(selectedChip));
+					Thread.sleep(20);
+					
+					serialConnect.write('r'); // read
+					Thread.sleep(20);
+
+				} catch (InterruptedException e1)
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
 		
 		//value
 		JLabel lblNewLabel = new JLabel("Value (bit)");
@@ -229,13 +271,12 @@ public class RegisterTableUI extends JFrame
 			btnValue[i] = new JButton("0");
 			btnValue[i].setBounds(436+size*i, 60, size, size);
 			panelSetting.add(btnValue[i]);
-// disable temporay
 			btnValue[i].setEnabled(false);
-//
 		}
 
 		// function
-		JButton btnSaveDump = new JButton("Save Dump");
+		//JButton btnSaveDump = new JButton("Save Dump"); //아직 구현안됨
+		btnSaveDump = new JButton("N/A");
 		btnSaveDump.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
@@ -244,9 +285,8 @@ public class RegisterTableUI extends JFrame
 		});
 		btnSaveDump.setBounds(244, 112, 180, 57);
 		panelSetting.add(btnSaveDump);
-// disable temporary
 		btnSaveDump.setEnabled(false);
-//
+
 		
 		//JButton btnApplyDump = new JButton("Apply Dump");
 		btnApplyDump = new JButton("Apply Dump");
@@ -263,6 +303,7 @@ public class RegisterTableUI extends JFrame
 
 		btnApplyDump.setBounds(436, 112, 180, 57);
 		panelSetting.add(btnApplyDump);
+		btnApplyDump.setEnabled(false);
 		
 		//JButton btnReadAll = new JButton("Read All");
 		btnReadAll = new JButton("Read All");
@@ -283,6 +324,7 @@ public class RegisterTableUI extends JFrame
 		});
 		btnReadAll.setBounds(628, 112, 179, 57);
 		panelSetting.add(btnReadAll);
+		btnReadAll.setEnabled(false);
 		
 		//log
 		textAreaLog = new JTextArea();
@@ -386,6 +428,10 @@ public class RegisterTableUI extends JFrame
 	{
 		return selectedValue;
 	}
+	public static int getSelectedChip()
+	{
+		return selectedChip;
+	}
 
 	public static String[][] getStrRegisterTable()
 	{
@@ -394,10 +440,14 @@ public class RegisterTableUI extends JFrame
 
 	public static void setEnableBtn(boolean state)
 	{
-		btnApplyDump.setEnabled(state);
+		comboBoxPort.setEnabled(!state);
+		comboBoxChip.setEnabled(state);
+
+		if( selectedChip == 1 )	{ btnApplyDump.setEnabled(state);	}
+		else 					{ btnApplyDump.setEnabled(false);	}
+		
 		btnReadAll.setEnabled(state);
 	}
-	
 }
 
 
