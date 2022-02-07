@@ -179,7 +179,8 @@ public class RegisterTableUI extends JFrame
 				}
 				else if( connectedState==0 ) // close -> open
 				{
-					String port = comboBoxPort.getSelectedItem().toString();
+					//String port = comboBoxPort.getSelectedItem().toString();
+					String port="";
 					//int speed       = SerialPort.BAUDRATE_38400;
 					int speed       = SerialPort.BAUDRATE_115200;
 					int data		= SerialPort.DATABITS_8;
@@ -188,6 +189,11 @@ public class RegisterTableUI extends JFrame
 					
 					try
 					{
+						port = comboBoxPort.getSelectedItem().toString();
+						if( port.length() == 0 )
+						{
+							throw new Exception();
+						}
 						serialConnect.connect(port, speed, data, stop, parity);
 						connectedState = 1;
 						
