@@ -7,21 +7,16 @@ import java.awt.Toolkit;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.MouseInputListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.filechooser.FileSystemView;
 
 import jssc.SerialPort;
 
 import javax.swing.JToggleButton;
 
 import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -29,12 +24,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -45,7 +35,7 @@ import java.awt.GridLayout;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.event.MouseAdapter;
-import java.awt.FlowLayout;
+
 
 public class RegisterTableUI extends JFrame
 {
@@ -53,7 +43,6 @@ public class RegisterTableUI extends JFrame
 	private PacketProcessing packetProcess;
 	
 	private JPanel contentPane;
-	private JButton[] btnValue;
 	private static JTextArea textAreaLog;
 	private static JTextField[][] arrTextField;
 	
@@ -65,10 +54,11 @@ public class RegisterTableUI extends JFrame
 	
 	private static JToggleButton btnConnect;
 	private static JButton btnSaveDump;
+	private static JButton[] btnValue;
 	
 	private static int connectedState;
 	private static int selectedChip=1; // 1:vs4210, 2:tp2824
-	private static int selectedAddress;
+	private static int selectedAddress=17;
 	private static int selectedValue=0;
 	private static String[][] strRegisterTable = new String[16][16];
 
@@ -266,20 +256,54 @@ public class RegisterTableUI extends JFrame
 				}
 			}
 		});
-		
+
 		//value
 		JLabel lblNewLabel = new JLabel("Value (bit)");
 		lblNewLabel.setBounds(475, 10, 350, 41);
 		panelSetting.add(lblNewLabel);
 
 		btnValue = new JButton[8];
+
 		for(int i=0; i<8; i++)
 		{
 			int size=45;
 			btnValue[i] = new JButton("0");
-			btnValue[i].setBounds(436+size*i, 60, size, size);
+			btnValue[i].setBounds(760-(size*i), 60, size, size);
 			panelSetting.add(btnValue[i]);
 			btnValue[i].setEnabled(false);
+			btnValue[i].addActionListener(new ActionListener()
+			{
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					// TODO Auto-generated method stub
+					JButton focusBtn = (JButton) e.getSource();
+					focusBtn.getText();
+					switch( Integer.parseInt(focusBtn.getText()))
+					{
+						case 0 :
+							focusBtn.setText("1");
+							break;
+						case 1 :
+							focusBtn.setText("0");
+							break;
+					}
+					
+					// update selected value
+					int sum=0;
+					for(int i=0; i<8; i++)
+					{
+						sum =  sum + Integer.parseInt(btnValue[i].getText()) * (int)(Math.pow(2, i)) ;
+					}
+					setSelectedValue(sum);
+
+					// write register
+					if( RegisterTableUI.getConnectedState() == 1 )
+					{
+						PacketProcessing.writeRegister(selectedAddress-16-1, selectedValue);
+					}
+				}
+			});
 		}
 
 		// function
@@ -434,6 +458,7 @@ public class RegisterTableUI extends JFrame
 
 	public static void updateRegisterTable()
 	{
+		//update table
 		for(int i=0; i<16; i++)
 		{
 			for(int j=0; j<16; j++)
@@ -441,7 +466,19 @@ public class RegisterTableUI extends JFrame
 				arrTextField[i+1][j+1].setText( strRegisterTable[i][j].toUpperCase() );
 			}
 		}
-
+		
+		//update selected value
+		int changedVal;
+		if( selectedAddress%16==0 )
+		{
+			changedVal = Integer.parseInt(arrTextField[selectedAddress/16-1][selectedAddress%16+16].getText(), 16);
+		}
+		else
+		{
+			changedVal = Integer.parseInt(arrTextField[selectedAddress/16][selectedAddress%16].getText(), 16);
+		}
+		
+		setSelectedValue(changedVal);
 	}
 	
 	public static void setSelectedAddress(int addr)
@@ -456,6 +493,7 @@ public class RegisterTableUI extends JFrame
 	public static void setSelectedValue(int val)
 	{
 		selectedValue = val;
+		updateSelectedValue();
 	}
 	public static int getSelectedValue()
 	{
@@ -480,12 +518,78 @@ public class RegisterTableUI extends JFrame
 		else 					{ btnApplyDump.setEnabled(false);	}
 		
 		btnReadAll.setEnabled(state);
+		
+		for(int i=0; i<8; i++)
+		{
+			btnValue[i].setEnabled(state);
+		}
 	}
 	
 	public static int getConnectedState()
 	{
 		return connectedState;
 	}
+	
+	private static void updateSelectedValue()
+	{
+		// update text field
+		if( selectedAddress%16 == 0 )
+		{
+			if( selectedValue < 0x10 )
+			{
+				arrTextField[selectedAddress/16-1][selectedAddress%16+16].setText("0"+Integer.toHexString(selectedValue).toUpperCase());
+			}
+			else
+			{
+				arrTextField[selectedAddress/16-1][selectedAddress%16+16].setText(Integer.toHexString(selectedValue).toUpperCase());
+			}
+		}
+		else
+		{
+			if( selectedValue < 0x10 )
+			{
+				arrTextField[selectedAddress/16][selectedAddress%16].setText("0"+Integer.toHexString(selectedValue).toUpperCase());
+			}
+			else
+			{
+				arrTextField[selectedAddress/16][selectedAddress%16].setText(Integer.toHexString(selectedValue).toUpperCase());
+			}
+		}
+		
+		// update value button
+		String valueStr = PacketProcessing.decToBinary(selectedValue);
+		
+		for(int i=0; i<8; i++)
+		{
+			btnValue[i].setText( valueStr.substring(7-i, 8-i) );
+		}
+	}
+/*
+	public static void readSelectedValue()
+	{
+		//System.out.println("addr = " + selectedAddress + "\t before = " + selectedValue );
+		
+		int val;
+		if( selectedAddress%16 == 0 )
+		{
+			if( arrTextField[selectedAddress/16-1][selectedAddress%16+16].getText().length() == 2 )
+			{
+				val = Integer.parseInt( arrTextField[selectedAddress/16-1][selectedAddress%16+16].getText(), 16);
+				setSelectedValue(val);
+			}
+		}
+		else
+		{
+			if( arrTextField[selectedAddress/16][selectedAddress%16].getText().length() == 2 )
+			{
+				val = Integer.parseInt( arrTextField[selectedAddress/16][selectedAddress%16].getText(), 16);
+				setSelectedValue(val);
+			}
+		}
+		
+		//System.out.println("addr = " + selectedAddress + "\t after = " + selectedValue );
+	}
+*/
 }
 
 
@@ -537,41 +641,6 @@ class TextFieldMouseHandler implements MouseInputListener
 	}
 }
 
-class BtnValueMouseHandler implements MouseListener
-{
-
-	@Override
-	public void mouseClicked(MouseEvent e)
-	{
-		// TODO Auto-generated method stub
-		JButton jb = (JButton) e.getSource();
-
-	}
-
-	@Override
-	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void mousePressed(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
-}
 
 class BtnTestMouseHandler implements MouseListener
 {
@@ -657,7 +726,8 @@ class TextFieldKeyHandler implements KeyListener
 			if( addr%16 == 0 )
 			{
 				calVal = Integer.parseInt( arrtf[addr/16-1][addr%16+16].getText() , 16 );
-				
+				RegisterTableUI.setSelectedValue(calVal);
+
 				if( calVal < 0x10 )
 				{
 					arrtf[addr/16-1][addr%16+16].setText("0"+Integer.toHexString(calVal).toUpperCase());
@@ -670,6 +740,7 @@ class TextFieldKeyHandler implements KeyListener
 			else
 			{
 				calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
+				RegisterTableUI.setSelectedValue(calVal);
 				
 				if( calVal < 0x10 )
 				{
@@ -685,9 +756,6 @@ class TextFieldKeyHandler implements KeyListener
 			{
 				PacketProcessing.writeRegister(calAddr, calVal);
 			}
-			
-			//System.out.println("tab addr = " + Integer.toHexString(addr));
-			//System.out.println("tab val = " + Integer.toHexString(val));
 			
 			arrtf[addr/16][addr%16+1].requestFocus(); // move focus
 		}
@@ -700,6 +768,7 @@ class TextFieldKeyHandler implements KeyListener
 			if( addr%16 == 0 )
 			{
 				calVal = Integer.parseInt( arrtf[addr/16-1][addr%16+16].getText() , 16 );
+				RegisterTableUI.setSelectedValue(calVal);
 				
 				if( calVal < 0x10 )
 				{
@@ -713,6 +782,7 @@ class TextFieldKeyHandler implements KeyListener
 			else
 			{
 				calVal = Integer.parseInt( arrtf[addr/16][addr%16].getText() , 16 );
+				RegisterTableUI.setSelectedValue(calVal);
 				
 				if( calVal < 0x10 )
 				{
@@ -723,14 +793,13 @@ class TextFieldKeyHandler implements KeyListener
 					arrtf[addr/16][addr%16].setText(Integer.toHexString(calVal).toUpperCase());
 				}
 			}
-
-			//System.out.printf( "calAddr = %d(=%x) \t calVal = %d(=%x)\n", calAddr, calAddr, calVal, calVal);
 			
+			//System.out.printf( "calAddr = %d(=%x) \t calVal = %d(=%x)\n", calAddr, calAddr, calVal, calVal);
+
 			if( RegisterTableUI.getConnectedState() == 1 )
 			{
 				PacketProcessing.writeRegister(calAddr, calVal);
 			}
-
 		}
 		else if( (e.getKeyCode() == KeyEvent.VK_ESCAPE) )
 		{
@@ -837,16 +906,16 @@ class TextFieldFocusHandler implements FocusListener
 			{
 				if( focusTf==arrtf[i][j] )
 				{
-									
+
 					//System.out.print("i="+i+"\t j="+j);
 					//System.out.println("\t pos="+Integer.toHexString(((i-1)*16+(j-1))));
 					//RegisterTableUI.setSelectedAddress( ((i-1)*16+(j-1)) );
 					//System.out.println("selectedAddress = "+ Integer.toHexString(RegisterTableUI.getSelectedAddress()));
-					 
-					 
+
+
 					//RegisterTableUI.setSelectedAddress(i*16+j);
 					//System.out.println("selectedAddress = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()) + "\t"+RegisterTableUI.getSelectedAddress());
-					 
+
 					int addr = i*16+j;
 					RegisterTableUI.setSelectedAddress(addr);
 					//System.out.println("focus addr = " + Integer.toHexString(RegisterTableUI.getSelectedAddress()));

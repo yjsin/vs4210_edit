@@ -331,4 +331,32 @@ public class PacketProcessing
 
 		return result;
 	}
+
+	public static String decToBinary(int n)
+    {
+        int[] binaryNum = new int[32];
+        int cnt = 0;
+        String result="";
+        
+        while (n > 0)
+        {
+            binaryNum[cnt] = n % 2;
+            n = n / 2;
+            cnt++;
+        }
+        
+        for (int i = cnt - 1; i >= 0; i--)
+        {
+            //System.out.print(binaryNum[i]);
+        	result = result + Integer.toString(binaryNum[i]);
+        }
+
+		//make 8 bit
+		while ( result.length() < 8 )
+		{
+			result = "0" + result;
+		}
+
+        return result;
+    }
 }
