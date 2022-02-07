@@ -31,6 +31,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +45,7 @@ import java.awt.GridLayout;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.event.MouseAdapter;
+import java.awt.FlowLayout;
 
 public class RegisterTableUI extends JFrame
 {
@@ -277,7 +279,8 @@ public class RegisterTableUI extends JFrame
 		// function
 		//JButton btnSaveDump = new JButton("Save Dump"); //아직 구현안됨
 		btnSaveDump = new JButton("N/A");
-		btnSaveDump.addActionListener(new ActionListener() {
+		btnSaveDump.addActionListener(new ActionListener()
+		{
 			public void actionPerformed(ActionEvent e)
 			{
 				
@@ -340,7 +343,7 @@ public class RegisterTableUI extends JFrame
 		panelTable.setBounds(12, 202, 821, 550);
 		contentPane.add(panelTable);
 		panelTable.setLayout(new GridLayout(17, 17, 0, 0));
-		
+
 		arrTextField = new JTextField[17][17];
 		for(int i=0; i<17; i++)
 		{
@@ -374,6 +377,30 @@ public class RegisterTableUI extends JFrame
 			}
 		}
 
+		
+		// test button
+		JPanel panelTest = new JPanel();
+		panelTest.setBounds(12, 762, 821, 69);
+		contentPane.add(panelTest);
+		panelTest.setLayout(null);
+		
+		JButton[] btnTest = new JButton[10];
+		for(int i=0; i<10; i++)
+		{
+			int size = 50;
+			btnTest[i] = new JButton(Integer.toString(i+1));
+			btnTest[i].setEnabled(true);
+			btnTest[i].setBounds(10+size*i, 10, size, size);
+			btnTest[i].addMouseListener(new BtnTestMouseHandler() );
+			
+			panelTest.add(btnTest[i]);
+			
+			if( i==9 )
+			{
+				btnTest[i].setText("0");
+			}
+			
+		}
 	}
 	
 	
@@ -447,6 +474,11 @@ public class RegisterTableUI extends JFrame
 		else 					{ btnApplyDump.setEnabled(false);	}
 		
 		btnReadAll.setEnabled(state);
+	}
+	
+	public static int getConnectedState()
+	{
+		return connectedState;
 	}
 }
 
@@ -535,9 +567,48 @@ class BtnValueMouseHandler implements MouseListener
 	}
 }
 
-class TextFieldKeyHandler implements KeyListener
+class BtnTestMouseHandler implements MouseListener
 {
 
+	@Override
+	public void mouseClicked(MouseEvent e)
+	{
+		// TODO Auto-generated method stub
+		JButton jb = (JButton) e.getSource();
+		//System.out.println("click = " + jb.getText());
+		
+		SerialConnect serialConnect = SerialConnect.getInstance();
+		serialConnect.write(jb.getText().getBytes(StandardCharsets.US_ASCII));
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+}
+
+
+class TextFieldKeyHandler implements KeyListener
+{
 /*
 	KeyEvent메소드
 
@@ -565,12 +636,12 @@ class TextFieldKeyHandler implements KeyListener
 	{
 		// keyReleased - 어떤 키던 상관없이 키가 놓아졌을 때 발생하는 이벤트
 		//System.out.println("keyRelease : "+e.getKeyCode() );
-		
+
 		int addr = RegisterTableUI.getSelectedAddress();
 		int val = RegisterTableUI.getSelectedValue();
 		JTextField[][] arrtf =  RegisterTableUI.getArrTextField();
 		//System.out.println("addr/16 = " + addr/16 + "\t addr%16 = " + addr%16);
-		
+		//System.out.println("addr = " + addr + "\t val = " + val);
 		if( (e.getKeyCode() == KeyEvent.VK_TAB) )
 		{
 			//System.out.println("tab");
@@ -604,13 +675,15 @@ class TextFieldKeyHandler implements KeyListener
 				}
 			}
 
-			PacketProcessing.writeRegister(calAddr, calVal);
-
+			if( RegisterTableUI.getConnectedState() == 1 )
+			{
+				PacketProcessing.writeRegister(calAddr, calVal);
+			}
+			
 			//System.out.println("tab addr = " + Integer.toHexString(addr));
 			//System.out.println("tab val = " + Integer.toHexString(val));
 			
 			arrtf[addr/16][addr%16+1].requestFocus(); // move focus
-
 		}
 		else if( (e.getKeyCode() == KeyEvent.VK_ENTER) )
 		{
@@ -646,7 +719,11 @@ class TextFieldKeyHandler implements KeyListener
 			}
 
 			//System.out.printf( "calAddr = %d(=%x) \t calVal = %d(=%x)\n", calAddr, calAddr, calVal, calVal);
-			PacketProcessing.writeRegister(calAddr, calVal);
+			
+			if( RegisterTableUI.getConnectedState() == 1 )
+			{
+				PacketProcessing.writeRegister(calAddr, calVal);
+			}
 
 		}
 		else if( (e.getKeyCode() == KeyEvent.VK_ESCAPE) )
@@ -798,6 +875,3 @@ class TextFieldFocusHandler implements FocusListener
 		jf.setBackground(Color.WHITE);
 	}
 }
-
-
-
