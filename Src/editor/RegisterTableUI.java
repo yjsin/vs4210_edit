@@ -8,15 +8,23 @@ import java.awt.Toolkit;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.MouseInputListener;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import javax.swing.text.DefaultFormatter;
+import javax.swing.text.MaskFormatter;
 
 import jssc.SerialPort;
 
 import javax.swing.JToggleButton;
-
+import javax.swing.SpinnerNumberModel;
+import javax.swing.JFormattedTextField.AbstractFormatter;
+import javax.swing.JFormattedTextField.AbstractFormatterFactory;
 import javax.swing.JComboBox;
+import javax.swing.JFormattedTextField;
+
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
@@ -24,7 +32,10 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.awt.event.ActionEvent;
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -35,6 +46,7 @@ import java.awt.GridLayout;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.event.MouseAdapter;
+import javax.swing.JSpinner;
 
 
 public class RegisterTableUI extends JFrame
@@ -55,6 +67,9 @@ public class RegisterTableUI extends JFrame
 	private static JToggleButton btnConnect;
 	private static JButton btnSaveDump;
 	private static JButton[] btnValue;
+	
+	private static JSpinner spnAddr;
+	private static JSpinner spnVal;
 	
 	private static int connectedState;
 	private static int selectedChip=1; // 1:vs4210, 2:tp2824
@@ -125,11 +140,11 @@ public class RegisterTableUI extends JFrame
 				}
 			}
 		});
-		comboBoxPort.setBounds(12, 61, 220, 41);
+		comboBoxPort.setBounds(12, 61, 152, 41);
 		panelSetting.add(comboBoxPort);
 		
 		JLabel lblState = new JLabel("Select Port");
-		lblState.setBounds(12, 10, 220, 41);
+		lblState.setBounds(12, 10, 152, 41);
 		panelSetting.add(lblState);
 
 		
@@ -214,11 +229,11 @@ public class RegisterTableUI extends JFrame
 
 		//chip
 		JLabel lblChip = new JLabel("Chip");
-		lblChip.setBounds(244, 10, 115, 41);
+		lblChip.setBounds(176, 10, 98, 41);
 		panelSetting.add(lblChip);
 		
 		comboBoxChip = new JComboBox();
-		comboBoxChip.setBounds(244, 61, 115, 41);
+		comboBoxChip.setBounds(176, 61, 98, 41);
 		panelSetting.add(comboBoxChip);
 		comboBoxChip.setEnabled(false);
 
@@ -237,7 +252,7 @@ public class RegisterTableUI extends JFrame
 //
 				if( selectedChip == 1 )	{ btnApplyDump.setEnabled(true);	}
 				else 					{ btnApplyDump.setEnabled(false);	}
-				
+
 				try
 				{
 					serialConnect.write('c'); // change
@@ -259,7 +274,7 @@ public class RegisterTableUI extends JFrame
 
 		//value
 		JLabel lblNewLabel = new JLabel("Value (bit)");
-		lblNewLabel.setBounds(475, 10, 350, 41);
+		lblNewLabel.setBounds(447, 10, 79, 41);
 		panelSetting.add(lblNewLabel);
 
 		btnValue = new JButton[8];
@@ -358,6 +373,88 @@ public class RegisterTableUI extends JFrame
 		btnReadAll.setBounds(628, 112, 179, 57);
 		panelSetting.add(btnReadAll);
 		btnReadAll.setEnabled(false);
+
+		//spinner
+		spnAddr = new JSpinner(new SpinnerNumberModel(0,0,255,1));
+		spnAddr.setBounds(286, 61, 73, 41);
+		panelSetting.add(spnAddr);
+		spnAddr.setEnabled(false);
+
+		JSpinner.DefaultEditor editorAddr = (JSpinner.DefaultEditor)spnAddr.getEditor();
+		JFormattedTextField tfAddr = editorAddr.getTextField();
+		tfAddr.setFormatterFactory(new hexFormattedFactory());
+
+		spnVal = new JSpinner(new SpinnerNumberModel(0,0,255,1));
+		spnVal.setBounds(362, 61, 73, 41);
+		panelSetting.add(spnVal);
+		spnVal.setEnabled(false);
+
+		JSpinner.DefaultEditor editorVal = (JSpinner.DefaultEditor)spnVal.getEditor();
+		JFormattedTextField tfVal = editorVal.getTextField();
+		tfVal.addKeyListener(new TextFieldKeyHandler()
+		{
+			@Override
+			public void keyTyped(KeyEvent e)
+			{
+				super.keyTyped(e);
+				
+				if( (e.getKeyChar() >= '0' && e.getKeyChar() <= '9' )
+					|| (e.getKeyChar() >='a' && e.getKeyChar() <= 'f' )
+					|| (e.getKeyChar() >='A' && e.getKeyChar() <= 'F' ) )
+					{
+						JTextField src = (JTextField) e.getSource();
+						if( src.getText().length() >=2 )
+						{
+							src.setText("");
+						}
+					}
+				else
+				{
+					e.consume();
+				}
+			}
+		});
+		tfVal.setFormatterFactory(new hexFormattedFactory());
+
+		spnVal.addChangeListener(new ChangeListener()
+		{
+			@Override
+			public void stateChanged(ChangeEvent e)
+			{
+				// TODO Auto-generated method stub
+				//System.out.println("changed = " + spnVal.getValue());
+				setSelectedValue( (Integer) spnVal.getValue() );
+				
+				// write register
+				if( RegisterTableUI.getConnectedState() == 1 )
+				{
+					PacketProcessing.writeRegister(selectedAddress-16-1, selectedValue);
+				}
+			}
+		});
+		
+		spnVal.addMouseWheelListener(new MouseWheelListener()
+		{
+			@Override
+			public void mouseWheelMoved(MouseWheelEvent mwe)
+			{
+				// TODO Auto-generated method stub
+				// rotation wheel dn = 1, wheel up = -1
+				int temp = (Integer) spnVal.getValue() - mwe.getWheelRotation();
+				if( temp>255 )		{ temp = 0;		}
+				else if( temp<0)	{ temp = 255;	}
+
+				spnVal.setValue( temp );
+			}
+		});
+
+		JLabel lblIndexhex = new JLabel("Index(hex)");
+		lblIndexhex.setBounds(286, 10, 73, 41);
+		panelSetting.add(lblIndexhex);
+		
+		JLabel lblValuehex = new JLabel("Value(hex)");
+		lblValuehex.setBounds(362, 10, 73, 41);
+		panelSetting.add(lblValuehex);
 		
 		//log
 		textAreaLog = new JTextArea();
@@ -407,7 +504,7 @@ public class RegisterTableUI extends JFrame
 			}
 		}
 
-		
+
 		// test button
 		JPanel panelTest = new JPanel();
 		panelTest.setBounds(12, 762, 821, 69);
@@ -484,6 +581,7 @@ public class RegisterTableUI extends JFrame
 	public static void setSelectedAddress(int addr)
 	{
 		selectedAddress = addr;
+		spnAddr.setValue(selectedAddress-16-1);
 	}
 	public static int getSelectedAddress()
 	{
@@ -523,6 +621,9 @@ public class RegisterTableUI extends JFrame
 		{
 			btnValue[i].setEnabled(state);
 		}
+		
+		//spnAddr.setEnabled(state);
+		spnVal.setEnabled(state);
 	}
 	
 	public static int getConnectedState()
@@ -563,35 +664,11 @@ public class RegisterTableUI extends JFrame
 		{
 			btnValue[i].setText( valueStr.substring(7-i, 8-i) );
 		}
-	}
-/*
-	public static void readSelectedValue()
-	{
-		//System.out.println("addr = " + selectedAddress + "\t before = " + selectedValue );
 		
-		int val;
-		if( selectedAddress%16 == 0 )
-		{
-			if( arrTextField[selectedAddress/16-1][selectedAddress%16+16].getText().length() == 2 )
-			{
-				val = Integer.parseInt( arrTextField[selectedAddress/16-1][selectedAddress%16+16].getText(), 16);
-				setSelectedValue(val);
-			}
-		}
-		else
-		{
-			if( arrTextField[selectedAddress/16][selectedAddress%16].getText().length() == 2 )
-			{
-				val = Integer.parseInt( arrTextField[selectedAddress/16][selectedAddress%16].getText(), 16);
-				setSelectedValue(val);
-			}
-		}
-		
-		//System.out.println("addr = " + selectedAddress + "\t after = " + selectedValue );
+		// update spinner
+		spnVal.setValue(selectedValue);
 	}
-*/
 }
-
 
 
 class TextFieldMouseHandler implements MouseInputListener
@@ -684,20 +761,20 @@ class BtnTestMouseHandler implements MouseListener
 
 class TextFieldKeyHandler implements KeyListener
 {
-/*
-	KeyEvent메소드
 
-	getKeyChar - 타이핑된 key값을 반환. 사실상 키보드랑은 무관하게 타이핑된 값을 반환.
-	getKeyCode - 타이핑된 키보드의 배치에 따른 값을 정수로 반환. 이 메소드덕분에 왼쪽 ctrl과 오른쪽 ctrl들을 구별가능
-	getkeyLocation -  키보드의 배치를 총 4군데로 나누는데 1이 키보드 전체, 2가 왼쪽 보조키, 3이 오른쪽 보조키, 4가 키패드
-	paramString - key보드에 관련된 전체 파라메터 반환
-	getWhen - 얼마나 눌러졌는지
-	isControlDown - Control이 눌러졌는지
-	isShiftDown - Shift가 눌러졌는지
-	isAltDown - Alt가 눌러졌는지
-	isMetaDown = Meta키가 눌러졌는지(맥으로 따지면 cmd, 윈도우에서는 window,몇몇 키보드에 존재하는 meta키)
-*/
-	
+//	KeyEvent메소드
+//
+//	getKeyChar - 타이핑된 key값을 반환. 사실상 키보드랑은 무관하게 타이핑된 값을 반환.
+//	getKeyCode - 타이핑된 키보드의 배치에 따른 값을 정수로 반환. 이 메소드덕분에 왼쪽 ctrl과 오른쪽 ctrl들을 구별가능
+//	getkeyLocation -  키보드의 배치를 총 4군데로 나누는데 1이 키보드 전체, 2가 왼쪽 보조키, 3이 오른쪽 보조키, 4가 키패드
+//	paramString - key보드에 관련된 전체 파라메터 반환
+//	getWhen - 얼마나 눌러졌는지
+//	isControlDown - Control이 눌러졌는지
+//	isShiftDown - Shift가 눌러졌는지
+//	isAltDown - Alt가 눌러졌는지
+//	isMetaDown = Meta키가 눌러졌는지(맥으로 따지면 cmd, 윈도우에서는 window,몇몇 키보드에 존재하는 meta키)
+
+
 	@Override
 	public void keyPressed(KeyEvent e)
 	{
@@ -887,6 +964,20 @@ class TextFieldKeyHandler implements KeyListener
 	{
 		// keyPressed - 어떤 키던 상관없이 키가 눌러졌을 때 발생하는 이벤트
 		//System.out.println("keyTyped : "+Character.toString( e.getKeyChar() ) );
+		if( (e.getKeyChar() >= '0' && e.getKeyChar() <= '9')
+				|| (e.getKeyChar() >= 'a' && e.getKeyChar() <= 'f' )
+				|| (e.getKeyChar() >= 'A' && e.getKeyChar() <= 'F' ) )
+		{
+			JTextField src = (JTextField) e.getSource();
+			if( src.getText().length() >= 2 )
+			{
+				src.setText("");
+			}
+		}
+		else
+		{
+			e.consume();
+		}
 	}
 }
 
@@ -948,5 +1039,42 @@ class TextFieldFocusHandler implements FocusListener
 		// TODO Auto-generated method stub
 		JTextField jf = (JTextField) e.getSource();
 		jf.setBackground(Color.WHITE);
+	}
+}
+
+
+class hexFormattedFactory extends AbstractFormatterFactory
+{
+	@Override
+	public AbstractFormatter getFormatter(JFormattedTextField arg0)
+	{
+		// TODO Auto-generated method stub
+		return new HexFormatter();
+	}
+}
+
+
+class HexFormatter extends DefaultFormatter
+{
+	public Object stringToValue(String text) throws ParseException
+	{
+		MaskFormatter formatter1 = new MaskFormatter("HH");
+
+		try
+		{
+			//System.out.println("String to Value");
+
+			return Integer.valueOf(text, 16);
+		}
+		catch (NumberFormatException nfe)
+		{
+			throw new ParseException(text,0);
+		}
+	}
+	
+	public String valueToString(Object value) throws ParseException
+	{
+		//System.out.println("Value to String");
+		return Integer.toHexString( ((Integer)value).intValue()).toUpperCase(); 
 	}
 }

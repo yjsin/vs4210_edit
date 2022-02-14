@@ -50,6 +50,10 @@
 
 Release Note
 
+220211
+- value spinner 추가
+- textfield 동작버그 수정
+
 220207
 - 디버깅용 테스트버튼 추가(0-9)
   창하단에 숨겨져 있음
