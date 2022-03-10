@@ -413,6 +413,25 @@ public class RegisterTableUI extends JFrame
 					e.consume();
 				}
 			}
+
+			@Override
+			public void keyReleased(KeyEvent e)
+			{
+				// TODO Auto-generated method stub
+				//super.keyReleased(e);
+				
+				if( (e.getKeyCode() == KeyEvent.VK_ENTER) )
+				{
+					setSelectedValue( (Integer) spnVal.getValue() );
+					
+					if( RegisterTableUI.getConnectedState() == 1 )
+					{
+						PacketProcessing.writeRegister(selectedAddress-16-1, selectedValue);
+					}
+				}
+			}
+			
+			
 		});
 		tfVal.setFormatterFactory(new hexFormattedFactory());
 
@@ -423,6 +442,7 @@ public class RegisterTableUI extends JFrame
 			{
 				// TODO Auto-generated method stub
 				//System.out.println("changed = " + spnVal.getValue());
+/*				// bug occurred when changing the chip
 				setSelectedValue( (Integer) spnVal.getValue() );
 				
 				// write register
@@ -430,6 +450,7 @@ public class RegisterTableUI extends JFrame
 				{
 					PacketProcessing.writeRegister(selectedAddress-16-1, selectedValue);
 				}
+*/
 			}
 		});
 		
@@ -444,7 +465,14 @@ public class RegisterTableUI extends JFrame
 				if( temp>255 )		{ temp = 0;		}
 				else if( temp<0)	{ temp = 255;	}
 
-				spnVal.setValue( temp );
+				//spnVal.setValue( temp );
+				
+				setSelectedValue( temp );
+				
+				if( RegisterTableUI.getConnectedState() == 1 )
+				{
+					PacketProcessing.writeRegister(selectedAddress-16-1, selectedValue);
+				}
 			}
 		});
 
