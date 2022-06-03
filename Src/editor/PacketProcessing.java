@@ -43,7 +43,7 @@ public class PacketProcessing
 //
 //    	System.out.println(str);
 //
-    	if( (state==4210) || (state==2824) )
+    	if( (state==4210) || (state==2824) || (state==2912))
     	{
     		if( counter>0 )
     		{
@@ -163,6 +163,11 @@ public class PacketProcessing
         		else if( temp.contains("TP2824 register read") )
         		{
         			state = 2824;
+        			counter=WAITTING_COUNT;
+        		}
+        		else if( temp.contains("TP2912 register read") )
+        		{
+        			state = 2912;
         			counter=WAITTING_COUNT;
         		}
         		else if( str.contains("change") || str.contains("write") )

@@ -239,6 +239,7 @@ public class RegisterTableUI extends JFrame
 
 		comboBoxChip.addItem("VS4210");
 		comboBoxChip.addItem("TP2824");
+		comboBoxChip.addItem("TP2912");
 		comboBoxChip.setSelectedIndex(0);
 		comboBoxChip.addActionListener(new ActionListener()
 		{
